@@ -1,26 +1,41 @@
-import { Injectable } from '@nestjs/common';
-import { CreateChamadoDto } from './dto/create-chamado.dto';
-import { UpdateChamadoDto } from './dto/update-chamado.dto';
+import { BadGatewayException, Inject, Injectable } from '@nestjs/common';
+import {
+  MODELO_PROVIDER,
+  type ModeloProvider,
+} from '../ia/providers/modelo.provider';
+import {
+  CHAMADO_CATEGORIAS,
+  isCategoriaPermitida,
+  normalizarCategoria,
+} from './chamado-categoria';
 
 @Injectable()
 export class ChamadosService {
-  create(createChamadoDto: CreateChamadoDto) {
-    return 'This action adds a new chamado';
-  }
+  constructor(
+    @Inject(MODELO_PROVIDER)
+    private readonly modelo: ModeloProvider,
+  ) {}
 
-  findAll() {
-    return `This action returns all chamados`;
-  }
+  async classificar(texto: string) {
+    const textoNormalizado = texto.trim();
 
-  findOne(id: number) {
-    return `This action returns a #${id} chamado`;
-  }
+    const resultado = await this.modelo.gerar({
+      mensagem:
+        `Classifique o chamado em uma destas categorias: ${CHAMADO_CATEGORIAS.join(', ')}.\n` +
+        `Responda somente com uma categoria.\n\n` +
+        textoNormalizado,
+    });
 
-  update(id: number, updateChamadoDto: UpdateChamadoDto) {
-    return `This action updates a #${id} chamado`;
-  }
+    const categoria = normalizarCategoria(resultado.resposta);
 
-  remove(id: number) {
-    return `This action removes a #${id} chamado`;
+    if (!isCategoriaPermitida(categoria)) {
+      throw new BadGatewayException('O modelo retornou uma categoria inválida');
+    }
+
+    return {
+      texto: textoNormalizado,
+      categoria,
+      modelo: resultado.modelo,
+    };
   }
 }

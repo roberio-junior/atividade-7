@@ -2,9 +2,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { IaController } from './ia.controller';
 import { IaService } from './ia.service';
-import {
-  MODELO_PROVIDER,
-} from './providers/modelo.provider';
+import { MODELO_PROVIDER } from './providers/modelo.provider';
 import { OllamaProvider } from './providers/ollama.provider';
 
 @Module({
@@ -17,5 +15,6 @@ import { OllamaProvider } from './providers/ollama.provider';
       useClass: OllamaProvider,
     },
   ],
+  exports: [MODELO_PROVIDER],
 })
 export class IaModule {}
